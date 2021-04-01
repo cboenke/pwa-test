@@ -27,12 +27,25 @@ export default function Home() {
     const convertedPublicKey = urlBase64ToUint8Array(publicKey);
 
     const registration = await navigator.serviceWorker.ready;
-    const subscription = registration.pushManager.subscribe({
+    const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: convertedPublicKey,
     });
-    console.log({ subscription });
+    const { keys } = subscription.toJSON();
+
+    await fetch("/api/subscriptions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        keys,
+      }),
+    });
+    // POST subscription.endpoint to server
   }
+
   return (
     <div className={styles.container}>
       <Head>
