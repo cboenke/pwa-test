@@ -1,6 +1,19 @@
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 export default function Home() {
   async function handleSubscribeClick() {
     const status = await Notification.requestPermission();
@@ -8,13 +21,17 @@ export default function Home() {
       return;
     }
 
+    const { publicKey } = await fetch("/api/vapid").then((response) =>
+      response.json()
+    );
+    const convertedPublicKey = urlBase64ToUint8Array(publicKey);
+
     const registration = await navigator.serviceWorker.ready;
-    console.log("Registered");
-    // const subscription = registration.pushManager.subscribe({
-    //   userVisibleOnly: true,
-    //   applicationServerKey: "",
-    // });
-    // console.log({ subscription });
+    const subscription = registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedPublicKey,
+    });
+    console.log({ subscription });
   }
   return (
     <div className={styles.container}>
